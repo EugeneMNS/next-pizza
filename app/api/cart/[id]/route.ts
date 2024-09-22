@@ -1,79 +1,20 @@
-import { calcCartItemTotalAmount } from '@/lib/calc-cart-item-total-amount';
-import { getUserSession } from '@/lib/get-user-session';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/prisma/prisma-client';
+import { updateCartTotalAmount } from '@/shared/lib/update-cart-total-amount';
 import { NextRequest, NextResponse } from 'next/server';
-
-async function updateCartTotalAmount(userId: number, cartToken: string) {
-  const userCart = await prisma.cart.findFirst({
-    where: {
-      OR: [
-        {
-          userId,
-        },
-        {
-          tokenId: cartToken,
-        },
-      ],
-    },
-    include: {
-      items: {
-        orderBy: {
-          createdAt: 'desc',
-        },
-        include: {
-          productItem: {
-            include: {
-              product: true,
-            },
-          },
-          ingredients: true,
-        },
-      },
-    },
-  });
-
-  const totalAmount = userCart?.items.reduce((acc, item) => {
-    return acc + calcCartItemTotalAmount(item);
-  }, 0);
-
-  return await prisma.cart.update({
-    where: {
-      id: userCart?.id,
-    },
-    data: {
-      totalAmount,
-    },
-    include: {
-      items: {
-        orderBy: {
-          createdAt: 'desc',
-        },
-        include: {
-          productItem: {
-            include: {
-              product: true,
-            },
-          },
-          ingredients: true,
-        },
-      },
-    },
-  });
-}
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const cartToken = req.cookies.get('cartToken')?.value;
-    const currentUser = await getUserSession();
-    const userId = Number(currentUser?.id);
+    const id = Number(params.id);
+    const data = (await req.json()) as { quantity: number };
+    const token = req.cookies.get('cartToken')?.value;
 
-    if (!cartToken) {
+    if (!token) {
       return NextResponse.json({ error: 'Cart token not found' });
     }
 
     const cartItem = await prisma.cartItem.findFirst({
       where: {
-        id: Number(params.id),
+        id,
       },
     });
 
@@ -81,61 +22,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'Cart item not found' });
     }
 
-    const data = (await req.json()) as { quantity: number };
-
     await prisma.cartItem.update({
       where: {
-        id: cartItem.id,
+        id,
       },
       data: {
         quantity: data.quantity,
       },
     });
 
-    await updateCartTotalAmount(userId, cartToken);
+    const updatedUserCart = await updateCartTotalAmount(token);
 
-    const userCart = await prisma.cart.findFirst({
-      where: {
-        OR: [
-          {
-            userId,
-          },
-          {
-            tokenId: cartToken,
-          },
-        ],
-      },
-      include: {
-        items: {
-          orderBy: {
-            createdAt: 'desc',
-          },
-          include: {
-            productItem: {
-              include: {
-                product: true,
-              },
-            },
-            ingredients: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json(userCart);
-  } catch (err) {
-    console.log(err);
-    return NextResponse.json({ message: '[CART_PATCH] Server error' }, { status: 500 });
+    return NextResponse.json(updatedUserCart);
+  } catch (error) {
+    console.log('[CART_PATCH] Server error', error);
+    return NextResponse.json({ message: 'Не удалось обновить корзину' }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const cartToken = req.cookies.get('cartToken')?.value;
-    const currentUser = await getUserSession();
-    const userId = Number(currentUser?.id);
+    const id = Number(params.id);
+    const token = req.cookies.get('cartToken')?.value;
 
-    if (!cartToken) {
+    if (!token) {
       return NextResponse.json({ error: 'Cart token not found' });
     }
 
@@ -151,43 +61,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     await prisma.cartItem.delete({
       where: {
-        id: cartItem.id,
+        id: Number(params.id),
       },
     });
 
-    await updateCartTotalAmount(userId, cartToken);
+    const updatedUserCart = await updateCartTotalAmount(token);
 
-    const userCart = await prisma.cart.findFirst({
-      where: {
-        OR: [
-          {
-            userId,
-          },
-          {
-            tokenId: cartToken,
-          },
-        ],
-      },
-      include: {
-        items: {
-          orderBy: {
-            createdAt: 'desc',
-          },
-          include: {
-            productItem: {
-              include: {
-                product: true,
-              },
-            },
-            ingredients: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json(userCart);
-  } catch (err) {
-    console.log(err);
-    return NextResponse.json({ message: '[CART_DELETE] Server error' }, { status: 500 });
+    return NextResponse.json(updatedUserCart);
+  } catch (error) {
+    console.log('[CART_DELETE] Server error', error);
+    return NextResponse.json({ message: 'Не удалось удалить корзину' }, { status: 500 });
   }
 }
