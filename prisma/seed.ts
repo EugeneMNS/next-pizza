@@ -1,7 +1,7 @@
-import { Prisma } from '@prisma/client';
-import { categories, _ingredients, products } from './constants';
-import { prisma } from './prisma-client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { hashSync } from 'bcrypt';
+
+const prisma = new PrismaClient();
 
 const randomDecimalNumber = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min) * 10 + min * 10) / 10;
@@ -13,8 +13,8 @@ const generateProductItem = ({
   size,
 }: {
   productId: number;
-  pizzaType?: 1 | 2;
-  size?: 20 | 30 | 40;
+  pizzaType?: number;
+  size?: number;
 }) => {
   return {
     productId,
@@ -24,18 +24,111 @@ const generateProductItem = ({
   } as Prisma.ProductItemUncheckedCreateInput;
 };
 
+const ingredients = [
+  {
+    name: 'Сырный бортик',
+    price: 179,
+    imageUrl:
+      'https://cdn.dodostatic.net/static/Img/Ingredients/99f5cb91225b4875bd06a26d2e842106.png',
+  },
+  {
+    name: 'Сливочная моцарелла',
+    price: 79,
+    imageUrl:
+      'https://cdn.dodostatic.net/static/Img/Ingredients/cdea869ef287426386ed634e6099a5ba.png',
+  },
+  {
+    name: 'Сыры чеддер и пармезан',
+    price: 79,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A22FA54A81411E9AFA69C1FE796',
+  },
+  {
+    name: 'Острый перец халапеньо',
+    price: 59,
+    imageUrl:
+      'https://cdn.dodostatic.net/static/Img/Ingredients/11ee95b6bfdf98fb88a113db92d7b3df.png',
+  },
+  {
+    name: 'Нежный цыпленок',
+    price: 79,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A39D824A82E11E9AFA5B328D35A',
+  },
+  {
+    name: 'Шампиньоны',
+    price: 59,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A22FA54A81411E9AFA67259A324',
+  },
+  {
+    name: 'Ветчина',
+    price: 79,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A39D824A82E11E9AFA61B9A8D61',
+  },
+  {
+    name: 'Пикантная пепперони',
+    price: 79,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A22FA54A81411E9AFA6258199C3',
+  },
+  {
+    name: 'Острая чоризо',
+    price: 79,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A22FA54A81411E9AFA62D5D6027',
+  },
+  {
+    name: 'Маринованные огурчики',
+    price: 59,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A21DA51A81211E9EA89958D782B',
+  },
+  {
+    name: 'Свежие томаты',
+    price: 59,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A39D824A82E11E9AFA7AC1A1D67',
+  },
+  {
+    name: 'Красный лук',
+    price: 59,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A22FA54A81411E9AFA60AE6464C',
+  },
+  {
+    name: 'Сочные ананасы',
+    price: 59,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A21DA51A81211E9AFA6795BA2A0',
+  },
+  {
+    name: 'Итальянские травы',
+    price: 39,
+    imageUrl:
+      'https://cdn.dodostatic.net/static/Img/Ingredients/370dac9ed21e4bffaf9bc2618d258734.png',
+  },
+  {
+    name: 'Сладкий перец',
+    price: 59,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A22FA54A81411E9AFA63F774C1B',
+  },
+  {
+    name: 'Кубики брынзы',
+    price: 79,
+    imageUrl: 'https://cdn.dodostatic.net/static/Img/Ingredients/000D3A39D824A82E11E9AFA6B0FFC349',
+  },
+  {
+    name: 'Митболы',
+    price: 79,
+    imageUrl:
+      'https://cdn.dodostatic.net/static/Img/Ingredients/b2f3a5d5afe44516a93cfc0d2ee60088.png',
+  },
+].map((obj, index) => ({ id: index + 1, ...obj }));
+
 async function up() {
   await prisma.user.createMany({
     data: [
       {
-        fullName: 'User Test',
+        fullName: 'User',
         email: 'user@test.ru',
         password: hashSync('111111', 10),
         verified: new Date(),
         role: 'USER',
       },
       {
-        fullName: 'Admin Admin',
+        fullName: 'Admin',
         email: 'admin@test.ru',
         password: hashSync('111111', 10),
         verified: new Date(),
@@ -45,15 +138,134 @@ async function up() {
   });
 
   await prisma.category.createMany({
-    data: categories,
-  });
-
-  await prisma.ingredient.createMany({
-    data: _ingredients,
+    data: [
+      {
+        name: 'Пиццы',
+      },
+      {
+        name: 'Завтрак',
+      },
+      {
+        name: 'Закуски',
+      },
+      {
+        name: 'Коктейли',
+      },
+      {
+        name: 'Напитки',
+      },
+    ],
   });
 
   await prisma.product.createMany({
-    data: products,
+    data: [
+      {
+        name: 'Омлет с ветчиной и грибами',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE7970321044479C1D1085457A36EB.webp',
+        categoryId: 2,
+      },
+      {
+        name: 'Омлет с пепперони',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE94ECF33B0C46BA410DEC1B1DD6F8.webp',
+        categoryId: 2,
+      },
+      {
+        name: 'Кофе Латте',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE7D61B0C26A3F85D97A78FEEE00AD.webp',
+        categoryId: 2,
+      },
+      {
+        name: 'Дэнвич ветчина и сыр',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE796FF0059B799A17F57A9E64C725.webp',
+        categoryId: 3,
+      },
+      {
+        name: 'Куриные наггетсы',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE7D618B5C7EC29350069AE9532C6E.webp',
+        categoryId: 3,
+      },
+      {
+        name: 'Картофель из печи с соусом 🌱',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EED646A9CD324C962C6BEA78124F19.webp',
+        categoryId: 3,
+      },
+      {
+        name: 'Додстер',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE796F96D11392A2F6DD73599921B9.webp',
+        categoryId: 3,
+      },
+      {
+        name: 'Острый Додстер 🌶️🌶️',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE796FD3B594068F7A752DF8161D04.webp',
+        categoryId: 3,
+      },
+      {
+        name: 'Банановый молочный коктейль',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EEE20B8772A72A9B60CFB20012C185.webp',
+        categoryId: 4,
+      },
+      {
+        name: 'Карамельное яблоко молочный коктейль',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE79702E2A22E693D96133906FB1B8.webp',
+        categoryId: 4,
+      },
+      {
+        name: 'Молочный коктейль с печеньем Орео',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE796FA1F50F8F8111A399E4C1A1E3.webp',
+        categoryId: 4,
+      },
+      {
+        name: 'Классический молочный коктейль 👶',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE796F93FB126693F96CB1D3E403FB.webp',
+        categoryId: 4,
+      },
+      {
+        name: 'Ирландский Капучино',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE7D61999EBDA59C10E216430A6093.webp',
+        categoryId: 5,
+      },
+      {
+        name: 'Кофе Карамельный капучино',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE7D61AED6B6D4BFDAD4E58D76CF56.webp',
+        categoryId: 5,
+      },
+      {
+        name: 'Кофе Кокосовый латте',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE7D61B19FA07090EE88B0ED347F42.webp',
+        categoryId: 5,
+      },
+      {
+        name: 'Кофе Американо',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE7D61B044583596548A59078BBD33.webp',
+        categoryId: 5,
+      },
+      {
+        name: 'Кофе Латте',
+        imageUrl:
+          'https://media.dodostatic.net/image/r:292x292/11EE7D61B0C26A3F85D97A78FEEE00AD.webp',
+        categoryId: 5,
+      },
+    ],
+  });
+
+  await prisma.ingredient.createMany({
+    data: ingredients,
   });
 
   const pizza1 = await prisma.product.create({
@@ -63,7 +275,7 @@ async function up() {
         'https://media.dodostatic.net/image/r:233x233/11EE7D61304FAF5A98A6958F2BB2D260.webp',
       categoryId: 1,
       ingredients: {
-        connect: _ingredients.slice(0, 5),
+        connect: ingredients.slice(0, 5),
       },
     },
   });
@@ -75,7 +287,7 @@ async function up() {
         'https://media.dodostatic.net/image/r:233x233/11EE7D610CF7E265B7C72BE5AE757CA7.webp',
       categoryId: 1,
       ingredients: {
-        connect: _ingredients.slice(5, 10),
+        connect: ingredients.slice(5, 10),
       },
     },
   });
@@ -87,7 +299,7 @@ async function up() {
         'https://media.dodostatic.net/image/r:584x584/11EE7D61706D472F9A5D71EB94149304.webp',
       categoryId: 1,
       ingredients: {
-        connect: _ingredients.slice(10, 40),
+        connect: ingredients.slice(10, 40),
       },
     },
   });
@@ -138,12 +350,10 @@ async function up() {
       {
         userId: 1,
         totalAmount: 0,
-        token: '11111',
       },
       {
         userId: 2,
         totalAmount: 0,
-        token: '222222',
       },
     ],
   });
@@ -152,7 +362,9 @@ async function up() {
     data: {
       productItemId: 1,
       cartId: 1,
-      quantity: 2,
+      userId: 1,
+      quantity: 1,
+      pizzaSize: 20,
       ingredients: {
         connect: [{ id: 1 }, { id: 2 }, { id: 3 }],
       },
@@ -220,13 +432,30 @@ async function up() {
 }
 
 async function down() {
-  await prisma.$executeRaw`TRUNCATE TABLE "User" RESTART IDENTITY CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "Category" RESTART IDENTITY CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "Cart" RESTART IDENTITY CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "CartItem" RESTART IDENTITY CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "Ingredient" RESTART IDENTITY CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "Product" RESTART IDENTITY CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "ProductItem" RESTART IDENTITY CASCADE`;
+  const tables = [
+    'User',
+    'Product',
+    'Ingredient',
+    'Order',
+    'ProductItem',
+    'VerificationCode',
+    'Category',
+    'Cart',
+    'CartItem',
+    'Story',
+    'StoryItem',
+  ];
+  await prisma.$executeRaw`TRUNCATE TABLE "User" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "Product" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "Ingredient" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "Order" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "ProductItem" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "VerificationCode" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "Category" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "Cart" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "CartItem" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "Story" RESTART IDENTITY CASCADE;`;
+  await prisma.$executeRaw`TRUNCATE TABLE "StoryItem" RESTART IDENTITY CASCADE;`;
 }
 
 async function main() {

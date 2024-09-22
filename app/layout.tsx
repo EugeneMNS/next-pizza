@@ -1,7 +1,7 @@
-import { Nunito } from 'next/font/google';
-
+import React from 'react';
 import './globals.css';
-import { Providers } from '@/shared/components/shared/providers';
+import { Providers } from './providers';
+import { Nunito } from 'next/font/google';
 
 const nunito = Nunito({
   subsets: ['cyrillic'],
@@ -15,11 +15,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html className={nunito.variable} lang="en">
       <head>
         <link data-rh="true" rel="icon" href="/logo.png" />
       </head>
-      <body className={nunito.className}>
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>
